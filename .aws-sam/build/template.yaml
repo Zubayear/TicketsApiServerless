@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'TicketsApi
+
+  Sample SAM Template for TicketsApi
+
+  '
+Globals:
+  Function:
+    Timeout: 20
+    Runtime: java11
+    Architectures:
+    - x86_64
+    MemorySize: 512
+    Environment:
+      Variables:
+        TICKETS_TABLE:
+          Ref: TicketsTable
+Resources:
+  TicketsTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: id
+        Type: String
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+  CreateTicketFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: CreateTicketFunction
+      Handler: com.zubayear.lambda.CreateTicketLambda::handleRequest
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: TicketsTable
+      Events:
+        TicketEvents:
+          Type: Api
+          Properties:
+            Path: /tickets
+            Method: post
+    Metadata:
+      SamResourceId: CreateTicketFunction
+  FetchTicketFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: FetchTicketFunction
+      Handler: com.zubayear.lambda.FetchTicketLambda::handleRequest
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName:
+            Ref: TicketsTable
+      Events:
+        TicketEvents:
+          Type: Api
+          Properties:
+            Path: /tickets
+            Method: get
+    Metadata:
+      SamResourceId: FetchTicketFunction
+Outputs:
+  TicketsApi:
+    Description: API Gateway endpoint URL for Prod stage for Tickets Api function
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/tickets/
